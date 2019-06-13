@@ -1,0 +1,158 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+<style>
+	#cas{
+		display: block;
+		border: 1px solid;
+		margin: auto;
+	}
+</style>
+<title>3D</title>
+</head>
+<body style="background-color:#000">
+<div>
+	<canvas id='cas' width="1000" height="500">test</canvas>
+	<div style="width:50px;margin:10px auto">
+		<button id="controlBtn">Stop</button>
+	</div>
+</div>
+<script>
+	var canvas = document.getElementById("cas"),
+		ctx = canvas.getContext("2d"),
+		loffset = 200;
+		length = 100,
+		angleX = 0,
+		angleY = 0,
+		cube = 0;
+		
+	var Cube = function(f1, f2, f3, f4, f5, f6){
+		this.Cub = [f1,f2,f3,f4,f5,f6];
+		this.draw = function(){
+			for(var i= 0;i<this.Cub.length;i++){
+				rotateX(this.Cub[i].Vec);
+				rotateY(this.Cub[i].Vec);
+				this.Cub[i].draw();
+			}
+		}
+	}
+	
+	var Face = function(v1, v2, v3 ,v4, color,Xoffset,Yoffset){
+		this.Vec = [v1,v2, v3, v4];
+		//this.zA = (v1.z+v2.z+v3.z+v4.z)/4;
+		this.color = color;
+		
+		this.draw = function(){
+			if((v1.z+v2.z+v3.z+v4.z)/4 > 0){
+			ctx.beginPath();
+			
+			ctx.moveTo(this.Vec[0].x + Xoffset,this.Vec[0].y + Yoffset);
+			ctx.lineTo(this.Vec[1].x + Xoffset,this.Vec[1].y + Yoffset);
+			ctx.lineTo(this.Vec[2].x + Xoffset,this.Vec[2].y + Yoffset);
+			ctx.lineTo(this.Vec[3].x + Xoffset,this.Vec[3].y + Yoffset);
+			ctx.closePath();
+			
+			ctx.fillStyle = this.color;
+			ctx.fill();
+			}
+		}
+	}
+	
+	var Vector = function(x,y,z){
+		this.x = x;
+		this.y = y;
+		this.z = z;
+	}
+	
+	var cubes = [];
+	
+	var InitToStart = function(){
+		var num = 10;
+		for(var j = 0; j < num;j++){
+		//var a = Math.acos(2*(j+1)-1/10 - 1);
+		//var b = a*Math.sqrt(10*Math.PI);
+		//var x = 300*Math.sin(a)*Math.cos(b) + 200;
+		//var y = 300*Math.sin(a)*Math.sin(b) + 200;
+		
+				var k = -1 + (2*(j+1)-1)/num;
+				var a = Math.acos(k);
+				var b = a * Math.sqrt(num * Math.PI);
+				var x = 300 * Math.sin(a) * Math.cos(b) + 200;
+				var y = 300 * Math.sin(a) * Math.sin(b) + 200;
+				
+							//		x				y				z
+		var v1 = new Vector(-this.length/2 , -this.length/2 , this.length/2);
+		var v2 = new Vector(-this.length/2 , this.length/2 , this.length/2); 
+		var v3 = new Vector(this.length/2 , -this.length/2 , this.length/2); 
+		var v4 = new Vector(this.length/2 , this.length/2 , this.length/2); 
+		var v5 = new Vector(this.length/2 , -this.length/2 , -this.length/2);
+		var v6 = new Vector(this.length/2 , this.length/2 , -this.length/2);
+		var v7 = new Vector(-this.length/2 , -this.length/2 , -this.length/2);
+		var v8 = new Vector(-this.length/2 , this.length/2 , -this.length/2);
+		
+		var f1 = new Face(v1,v2,v4,v3,"#6c6", x, y);
+		var f2 = new Face(v3,v4,v6,v5,"#6cc", x, y);
+		var f3 = new Face(v5,v6,v8,v7,"#cc6", x, y);
+		var f4 = new Face(v7,v8,v2,v1,"#c6c", x, y);
+		var f5 = new Face(v2,v4,v6,v8,"#666", x, y);
+		var f6 = new Face(v1,v3,v5,v7,"#ccc", x, y);
+		
+		//faces.sort(function(a,b){
+		//	return a.zA-b.zA;
+		//});
+		
+		cubes.push(new Cube(f1,f2,f3,f4,f5,f6));
+		}
+	}
+	
+	      function rotateX(vectors){
+            var cos = Math.cos(angleX);
+            var sin = Math.sin(angleX);
+            for(var v of vectors){
+                var y1 = v.y * cos - v.z * sin;
+                var z1 = v.z * cos + v.y * sin;
+                v.y = y1;
+                v.z = z1;
+            }
+        }
+
+        function rotateY(vectors){
+            var cos = Math.cos(angleY);
+            var sin = Math.sin(angleY);
+            for(var v of vectors){
+                var x1 = v.x * cos - v.z * sin;
+                var z1 = v.z * cos + v.x * sin;
+                v.x = x1;
+                v.z = z1;
+            }
+        }
+	
+	
+	function animate(){
+		ctx.clearRect(0,0,canvas.width, canvas.height);
+		for(var c of cubes){
+			c.draw();
+		}
+			
+			if("requestAnimationFrame" in window)
+				requestAnimationFrame(animate);
+			else if("webkitRequestAnimationFrame" in window)
+				webkitRequestAnimationFrame(animate);
+			else if("msRequestAnimationFrame" in window)
+				msRequestAnimationFrame(animate);
+			else if("mozRequestAnimationFrame" in window){
+				mozReqeustAnimationFrame(animate);
+			}
+	}
+	
+	            window.addEventListener("mousemove" , function(event){
+                var x = event.clientX - canvas.offsetLeft -loffset;
+                var y = event.clientY - canvas.offsetTop -loffset;
+                angleY = x*0.0001;
+                angleX = y*0.0001;
+            });
+            
+            
+	InitToStart();
+	animate();
+</script>
+</body>

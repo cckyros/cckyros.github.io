@@ -1,0 +1,195 @@
+<head>
+<script type="text/javascript">
+var ref;
+var ctx;
+var canvas;
+var len = 1;
+var snake = [];
+var ww;
+var hh;
+var whoff = 20;
+var speed = 157;
+var timer;
+var colorCount=6;
+var color=["lightgreen","SkyBlue","PaleVioletRed","LightPink","Indigo","DoderBlue","Khaki"];
+
+var food = {
+	cper: 1,
+	x: 0,
+	y: 0,
+	color: 'lightgreen',
+	beEaten: true,
+	draw: function(){
+		if(this.beEaten){
+			this.beEaten = false;
+			ctx.clearRect(this.x*whoff, this.y*whoff, whoff, whoff);
+			this.color = color[Math.ceil(Math.random()*colorCount)];
+			this.x=Math.ceil(Math.random()*ww)-2;
+			this.y=Math.ceil(Math.random()*hh)-2;
+		}
+		ctx.fillStyle = this.color;
+		ctx.fillRect(this.x*whoff, this.y*whoff, whoff, whoff);
+	}
+}
+function snakeblock(px,py,clor){
+	this.x=px;
+	this.y=py;
+	this.derect=1;
+	this.color=clor;
+	this.draw=function(){
+		ctx.fillStyle = this.color;
+		ctx.fillRect(this.x*whoff, this.y*whoff, whoff, whoff);
+	}
+}
+
+window.onload = function(){
+	ww = window.document.body.offsetWidth/whoff;
+	hh = window.document.body.offsetHeight/whoff;
+	
+	canvas = document.getElementById('canvas');
+	canvas.width = window.document.body.offsetWidth;
+	canvas.height = window.document.body.offsetHeight;
+	ctx = canvas.getContext('2d');
+	
+	window.addEventListener('keydown',windowKeydown);
+	window.addEventListener('touchstart', Touchstart);
+	window.addEventListener('touchmove', Touchmove, false);
+	
+	snake[0] = new snakeblock(0,0,"yellow");
+	timer = setInterval(draw,speed);
+	
+	//ref = window.requestAnimationFrame(draw);
+}
+
+function draw(){
+
+	food.draw();
+
+	clearlframe();
+	
+	var block = snake[0];
+	var idx=len - 1;
+	for(let i=idx;i>0;--i){
+		if(block.x===snake[i].x && block.y===snake[i].y){
+			alert("You are eating yourself!");
+			window.location.reload()
+		}
+	}
+	
+	if(block.x===food.x && block.y===food.y){
+		var bt = snake[len - 1];
+		food.beEaten = true;
+		len++;
+		snake[len-1] = new snakeblock(bt.x, bt.y,food.color);
+		snake[len-1].draw();
+		if(speed > 17 && len%2 == 0){
+			speed -= 10;
+			clearInterval(timer);
+			timer = setInterval(draw,speed);
+		}
+	}
+	
+	var fx = block.x;
+	var fy = block.y;
+	autoforward(block);
+	
+	
+	if(food.beEaten){
+		idx = len-2;
+	}
+	
+	for(let i=idx;i>0;--i){
+		if(i>1)
+		{
+		snake[i].x=snake[i-1].x;
+		snake[i].y=snake[i-1].y;
+		}else{
+			snake[i].x=fx;
+			snake[i].y=fy;
+		}
+		snake[i].draw();
+	}
+	
+	//raf = window.requestAnimationFrame(draw);
+}
+
+function clearlframe(){
+	ctx.clearRect(snake[len-1].x*whoff, snake[len-1].y*whoff, whoff, whoff);
+}
+
+function autoforward(block)
+{
+	if(block.derect === 1 && (block.x+1) < ww){
+		block.x += 1;
+		block.draw();
+	}
+	else if(block.derect === 2 && (block.y+1) < hh){
+		block.y += 1;
+		block.draw();
+	}
+	else if(block.derect === 3 && (block.x-1) > -1){
+		block.x -= 1;
+		block.draw();
+	}
+	else if(block.derect === 4 && (block.y-1) > -1){
+		block.y -= 1;
+		block.draw();
+	}else{
+		alert("You are dead!");
+		window.location.reload()
+		//block.draw();
+	}
+}
+
+function windowKeydown(e)
+{
+	switch(e.keyCode){
+		case 87:
+			if(snake[0].derect != 2)
+				snake[0].derect=4;//up
+			break;
+		case 65:
+			if(snake[0].derect != 1)
+				snake[0].derect=3;//left
+			break;
+		case 83:
+			if(snake[0].derect != 4)
+				snake[0].derect=2;//down
+			break;
+		case 68:
+			if(snake[0].derect != 3)
+				snake[0].derect=1;//right
+			break;
+	}
+}
+
+var YStart = 0;
+var XStart = 0;
+function Touchstart(e){
+	YStart = e.changedTouches[0].clientY;
+	XStart = e.changedTouches[0].clientX;
+}
+
+function Touchmove(e){
+	var disY = e.changedTouches[0].clientY - YStart;
+	var disX = e.changedTouches[0].clientX - XStart;
+	
+	if(disY > 100){
+	snake[0].derect=2;//down
+	}else if(disX > 100){
+	snake[0].derect=1;//right
+	}else if(disY < -100){
+	snake[0].derect=4;//up
+	}else if(disX < -100){
+	snake[0].derect=3;//left
+	}
+}
+
+function Touchend(e){
+}
+</script>
+</head>
+<body>
+	<div>w,a,s,d to move</div>
+	<canvas id="canvas" style="background:grey" />
+</body>

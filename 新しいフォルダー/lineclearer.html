@@ -1,0 +1,906 @@
+<head>
+<script type="text/javascript">
+    var lbscore;
+    var canvas;
+    var ctx;
+    var size = 40;
+    var xCount = 0;
+    var yCount = 0;
+    var canWidth;
+    var canHeight;
+
+    var st = 50;
+    var speed = 10;
+
+    var updown = 0;
+    var leftright = 0;
+    var AllB = [];
+    var moveType;
+
+    var lrOffset;
+
+    function TypeModel() {
+        this.color = "darkblue";//'#' + Math.floor(Math.random() * 0xffffff).toString(16);
+        this.swtype = 0
+        this.type = 0;
+        this.leftblocks = [];
+        this.rightblocks = [];
+        this.bottomblocks = [];
+        this.updateBlocks = true;
+    }
+
+    function Ltype() {
+        TypeModel.apply(this, arguments);
+
+        this.maxtype = 3;
+        var p1 = new p(0, 0);
+        var p2 = new p(0, 0);
+        var p3 = new p(0, 0);
+        var p4 = new p(0, 0);
+        this.blocks = [p1, p2, p3, p4];
+
+        this.update = function (type, swtype) {
+            ctx.fillStyle = this.color;
+            if (this.type === 0) {
+                switch (this.swtype) {
+                    case 0:
+                        p1.setP(leftright, updown);
+                        p2.setP(leftright, size + updown);
+                        p3.setP(leftright, size * 2 + updown);
+                        p4.setP(leftright + size, size * 2 + updown);
+                        //drawblocks(this.blocks)
+                        break;
+                    case 1:
+                        p1.setP(leftright, updown + size);
+                        p2.setP(leftright + size, size + updown);
+                        p3.setP(leftright + size * 2, size + updown);
+                        p4.setP(leftright + size * 2, updown);
+                        //drawblocks(this.blocks)
+                        break;
+                    case 2:
+                        p1.setP(leftright, updown);
+                        p2.setP(leftright + size, updown);
+                        p3.setP(leftright + size, size + updown);
+                        p4.setP(leftright + size, updown + size * 2);
+                        //drawblocks(this.blocks)
+                        break;
+                    case 3:
+                        p1.setP(leftright, updown);
+                        p2.setP(leftright + size, updown);
+                        p3.setP(leftright + size * 2, updown);
+                        p4.setP(leftright, updown + size);
+                        //drawblocks(this.blocks)
+                        break;
+                }
+            } else {
+                switch (this.swtype) {
+                    case 0:
+                        p1.setP(leftright + size, updown);
+                        p2.setP(leftright + size, updown + size);
+                        p3.setP(leftright + size, size * 2 + updown);
+                        p4.setP(leftright, size * 2 + updown);
+                        //drawblocks(this.blocks)
+                        break;
+                    case 1:
+                        p1.setP(leftright, updown);
+                        p2.setP(leftright + size, updown);
+                        p3.setP(leftright + size * 2, updown);
+                        p4.setP(leftright + 2 * size, size + updown);
+                        //drawblocks(this.blocks)
+                        break;
+                    case 2:
+                        p1.setP(leftright, updown);
+                        p2.setP(leftright + size, updown);
+                        p3.setP(leftright, size + updown);
+                        p4.setP(leftright, updown + size * 2);
+                        //drawblocks(this.blocks)
+                        break;
+                    case 3:
+                        p1.setP(leftright, updown);
+                        p2.setP(leftright, updown + size);
+                        p3.setP(leftright + size, updown + size);
+                        p4.setP(leftright + size * 2, updown + size);
+                        //drawblocks(this.blocks)
+                        break;
+                }
+            }
+            if (this.updateBlocks) {
+                this.updateBlocks = false;
+                this.leftblocks = getLeftBlocks(this.blocks);
+                this.rightblocks = getRightBlocks(this.blocks);
+                this.bottomblocks = getBottomBlocks(this.blocks);
+            }
+        }
+        this.clear = function () {
+            clearblocks(this.blocks);
+        }
+    }
+
+    function getRightBlocks(blocks) {
+        rightblocks = [];
+        var oy = [];
+        for (let i = 0; i < blocks.length; i++) {
+            if (!contains(oy, blocks[i].y)) {
+                oy[oy.length] = blocks[i].y;
+            }
+        }
+        var r;
+        var block;
+        for (let i = 0; i < oy.length; ++i) {
+            r = -1;
+            for (let j = 0; j < blocks.length; j++) {
+                block = blocks[j];
+                if (oy[i] === block.y) {
+                    if (r === -1)
+                        r = block;
+
+                    if (block.x > r.x)
+                        r = block;
+                }
+            }
+            rightblocks[rightblocks.length] = r;
+        }
+        return rightblocks;
+    }
+
+    function getLeftBlocks(blocks) {
+        leftblocks = [];
+        var oy = [];
+        for (let i = 0; i < blocks.length; i++) {
+            if (!contains(oy, blocks[i].y)) {
+                oy[oy.length] = blocks[i].y;
+            }
+        }
+        var l;
+        var block;
+        for (let i = 0; i < oy.length; ++i) {
+            l = -1;
+            for (let j = 0; j < blocks.length; j++) {
+                block = blocks[j];
+                if (oy[i] === block.y) {
+                    if (l === -1)
+                        l = block;
+
+                    if (block.x <= l.x)
+                        l = block;
+                }
+            }
+            leftblocks[leftblocks.length] = l;
+        }
+        return leftblocks;
+    }
+    
+    function getBottomBlocks(blocks) {
+        var bottomblocks = [];
+        var ox = [];
+        for (let i = 0; i < blocks.length; i++) {
+            if (!contains(ox, blocks[i].x)) {
+                ox[ox.length] = blocks[i].x;
+            }
+        }
+        var b;
+        var block;
+        for (let i = 0; i < ox.length; ++i) {
+            b = -1;
+            for (let j = 0; j < blocks.length; j++) {
+                block = blocks[j];
+                if (ox[i] === block.x) {
+                    if (b === -1)
+                        b = block;
+
+                    if (block.y > b.y)
+                        b = block;
+                }
+            }
+            bottomblocks[bottomblocks.length] = b;
+        }
+        return bottomblocks;
+    }
+
+    function Ztype() {
+        TypeModel.apply(this, arguments);
+        this.maxtype = 1;
+
+        var p1 = new p(0, 0);
+        var p2 = new p(0, 0);
+        var p3 = new p(0, 0);
+        var p4 = new p(0, 0);
+        this.blocks = [p1, p2, p3, p4];
+
+        this.update = function () {
+            ctx.fillStyle = this.color;
+            if (this.type === 0) {
+                switch (this.swtype) {
+                    case 0:
+                        p1.setP(leftright, updown);
+                        p2.setP(leftright + size, updown);
+                        p3.setP(leftright + size, updown + size);
+                        p4.setP(leftright + 2 * size, updown + size);
+                        //drawblocks(this.blocks);
+                        break;
+                    case 1:
+                        p1.setP(leftright + size, updown);
+                        p2.setP(leftright + size, updown + size);
+                        p3.setP(leftright, updown + size);
+                        p4.setP(leftright, updown + 2 * size);
+                        //drawblocks(this.blocks);
+                        break;
+                }
+            } else {
+                switch (this.swtype) {
+                    case 0:
+                        p1.setP(leftright, updown + size);
+                        p2.setP(leftright + size, updown + size);
+                        p3.setP(leftright + size, updown);
+                        p4.setP(leftright + 2 * size, updown);
+                        //drawblocks(this.blocks);
+                        break;
+                    case 1:
+                        p1.setP(leftright, updown);
+                        p2.setP(leftright, updown + size);
+                        p3.setP(leftright + size, updown + size);
+                        p4.setP(leftright + size, updown + 2 * size);
+                        //drawblocks(this.blocks);
+                        break;
+                }
+            }
+            if (this.updateBlocks) {
+                this.updateBlocks = false;
+                this.leftblocks = getLeftBlocks(this.blocks);
+                this.rightblocks = getRightBlocks(this.blocks);
+                this.bottomblocks = getBottomBlocks(this.blocks);
+            }
+        }
+        this.clear = function () {
+            clearblocks(this.blocks);
+        }
+    }
+
+    function Ttype() {
+        TypeModel.apply(this, arguments);
+        this.maxtype = 3;
+
+        var p1 = new p(0, 0);
+        var p2 = new p(0, 0);
+        var p3 = new p(0, 0);
+        var p4 = new p(0, 0);
+        this.blocks = [p1, p2, p3, p4];
+
+        this.update = function () {
+            ctx.fillStyle = this.color;
+            if (this.type === 0) {
+                switch (this.swtype) {
+                    case 0:
+                        p1.setP(leftright, updown);
+                        p2.setP(leftright + size, updown);
+                        p3.setP(leftright + size * 2, updown);
+                        p4.setP(leftright + size, updown + size);
+                        //drawblocks(this.blocks);
+                        break;
+                    case 1:
+                        p1.setP(leftright, updown);
+                        p2.setP(leftright, updown + size);
+                        p3.setP(leftright, updown + size * 2);
+                        p4.setP(leftright + size, updown + size);
+                        //drawblocks(this.blocks);
+                        break;
+                    case 2:
+                        p1.setP(leftright, updown + size);
+                        p2.setP(leftright + size, updown);
+                        p3.setP(leftright + size * 2, updown + size);
+                        p4.setP(leftright + size, updown + size);
+                        //drawblocks(this.blocks);
+                        break;
+                    case 3:
+                        p1.setP(leftright + size, updown);
+                        p2.setP(leftright, updown + size);
+                        p3.setP(leftright + size, updown + size);
+                        p4.setP(leftright + size, updown + size * 2);
+                        //drawblocks(this.blocks);
+                        break;
+                }
+                if (this.updateBlocks) {
+                    this.updateBlocks = false;
+                    this.leftblocks = getLeftBlocks(this.blocks);
+                    this.rightblocks = getRightBlocks(this.blocks);
+                    this.bottomblocks = getBottomBlocks(this.blocks);
+                }
+            } else {
+
+            }
+        }
+        this.clear = function () {
+            clearblocks(this.blocks);
+        }
+    }
+
+    function Itype() {
+        TypeModel.apply(this, arguments);
+        this.maxtype = 1;
+
+        var p1 = new p(0, 0);
+        var p2 = new p(0, 0);
+        var p3 = new p(0, 0);
+        var p4 = new p(0, 0);
+        var p5 = new p(0, 0);
+        this.blocks = [p1, p2, p3, p4, p5];
+
+        this.update = function () {
+            ctx.fillStyle = this.color;
+            switch (this.swtype) {
+                case 0:
+                    p1.setP(leftright, updown);
+                    p2.setP(leftright + size, updown);
+                    p3.setP(leftright + size * 2, updown);
+                    p4.setP(leftright + size * 3, updown);
+                    p5.setP(leftright + size * 4, updown);
+                    //drawblocks(this.blocks);
+                    break;
+                case 1:
+                    p1.setP(leftright + size, updown - size);
+                    p2.setP(leftright + size, updown);
+                    p3.setP(leftright + size, updown + size);
+                    p4.setP(leftright + size, updown + size * 2);
+                    p5.setP(leftright + size, updown + size * 3);
+                    //drawblocks(this.blocks);
+            }
+            if (this.updateBlocks) {
+                this.updateBlocks = false;
+                this.leftblocks = getLeftBlocks(this.blocks);
+                this.rightblocks = getRightBlocks(this.blocks);
+                this.bottomblocks = getBottomBlocks(this.blocks);
+            }
+        }
+
+        this.clear = function () {
+            clearblocks(this.blocks);
+        }
+    }
+
+    function RectType() {
+        TypeModel.apply(this, arguments);
+
+        this.maxtype = 0;
+        var p1 = new p(0, 0);
+        var p2 = new p(0, 0);
+        var p3 = new p(0, 0);
+        var p4 = new p(0, 0);
+        this.blocks = [p1, p2, p3, p4];
+
+        this.update = function () {
+            ctx.fillStyle = this.color;
+            p1.setP(leftright, updown);
+            p2.setP(leftright + size, updown);
+            p3.setP(leftright, updown + size);
+            p4.setP(leftright + size, updown + size);
+            //drawblocks(this.blocks);
+
+            if (this.updateBlocks) {
+                this.updateBlocks = false;
+                this.leftblocks = getLeftBlocks(this.blocks);
+                this.rightblocks = getRightBlocks(this.blocks);
+                this.bottomblocks = getBottomBlocks(this.blocks);
+            }
+        }
+        this.clear = function () {
+            clearblocks(this.blocks);
+        }
+    }
+
+
+
+
+    // point entity
+    function p(x, y) {
+        this.x = x;
+        this.y = y;
+        this.setP = function (a, b) {
+            this.x = a;
+            this.y = b;
+        }
+    }
+
+    function b(f, c)
+    {
+        this.flg = f;
+        this.cl = c;
+    }
+    function contains(arr, parm) {
+        for (let i = 0; i < arr.length; ++i) {
+            if (arr[i] === parm) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function restartDialog() {
+        if (confirm("You lose! Restart?")) {
+            window.location.reload();
+        } else {
+            restartDialog();
+            //window.location.href("about:blank");
+        }
+    }
+
+    function line() {
+        this.y = 0;
+        this.lineP = [];
+        this.init = function () {
+            for (let i = 0; i < xCount; ++i) {
+                this.lineP[i] = new b(0, "darkred");
+            }
+        }
+
+
+        this.addP = function (x,clr) {
+            this.lineP[x].flg = 1;
+            this.lineP[x].cl = clr;
+        }
+
+        this.clear = function () {
+            //this.init();
+            ctx.clearRect(0, this.y * size, canWidth, size);
+        }
+        this.draw = function () {
+            for (let i = 0; i < xCount; ++i) {
+                if (this.lineP[i].flg === 1) {
+                    ctx.fillStyle = this.lineP[i].cl;
+                    ctx.fillRect(i * size, this.y * size, size, size);
+                }
+            }
+        }
+
+        this.checkLine = function(){
+            for (let i = 0; i < xCount; ++i) {
+                if (this.lineP[i].flg === 0)
+                    return false;
+            }
+            return true;
+        }
+
+        this.clone = function (lp) {
+            for (let i = 0; i < lp.length; ++i) {
+                this.lineP[i].flg = lp[i].flg;
+                this.lineP[i].cl = lp[i].cl;
+            }
+        }
+    }
+
+    function allBlocks() {
+        this.allLines = [];
+        this.init = function () {
+            for (let i = 0; i < yCount; ++i) {
+                var l = new line();
+                l.y = i;
+                l.init();
+                this.allLines[i] = l;
+            }
+        }
+
+        this.addLine = function (blocks, clr) {
+            for (let i = 0; i < blocks.length; i++) {
+                var row = Math.floor(blocks[i].y / size);
+                var col = Math.floor(blocks[i].x / size);
+                if (row <= 0) {
+                    restartDialog();
+                    return;
+                }
+                var line = this.allLines[row];
+                line.addP(col, clr);
+            }
+        }
+        
+            //allLines.splice(0,clr);
+        this.LinesDown = function(idx){
+            for (let i = idx; i > 0; --i) {
+                    this.allLines[i].clear();
+                    this.allLines[i].clone(this.allLines[i - 1].lineP);
+                }
+        }
+
+        this.checkClear = function (blocks) {
+            for (let i = 0; i < blocks.length; ++i) {
+                var row = Math.floor(blocks[i].y / size);
+                var l = this.allLines[row];
+                    if (l.checkLine()) {
+                        this.LinesDown(row);
+                        lbscore.innerText = parseInt(lbscore.innerText) + 1;
+                        isdown = true;
+                    }
+            }
+        }
+
+        this.draw = function () {
+            for (let i = 0; i < this.allLines.length; ++i) {
+                this.allLines[i].draw();
+            }
+        }
+
+        this.getStatus = function (x, y) {
+            var row = y / size;
+            var col = x / size;
+
+             if (col > xCount - 1) 
+                 return true;
+             else if (col < 0) 
+                 return true;
+
+             if (row < yCount)
+                 return this.allLines[row].lineP[col].flg === 0;
+
+            return false;
+        }
+        // true : can move ; false: can`t move
+        this.getHorizonalStatus = function (x, y) {
+            var row = y / size;
+            var col = x / size;
+            if (row < 0) {
+                return false;
+            } else if (row > yCount - 1) {
+                return false;
+            } else if (col > xCount - 1) {
+                lrOffset = canWidth - getBlockWith(moveType.blocks);
+                return false;
+            } else if (col < 0) {
+                lrOffset = 0;
+                return false;
+            } else {
+                var ret = this.allLines[row].lineP[col].flg === 0;
+                if (!ret) {
+                    lrOffset = x - getBlockWith(moveType.blocks);
+                }
+                return ret;
+            }
+            //if ((row > -1 && row < yCount) && col < xCount && col > -1) {}
+        }
+    }
+
+    function getBlockWith(blocks) {
+        var l = canWidth;
+        var r = 0;
+        for (let i = 0; i < blocks.length; ++i) {
+            l = blocks[i].x < l ? blocks[i].x : l;
+            r = blocks[i].x > r ? blocks[i].x : r;
+        }
+        return r-l + size;
+    }
+    
+    function rightCheck(rightblocks, isM) {
+        if (isM) {
+            for (let i = 0; i < rightblocks.length; ++i) {
+                if (AllB.getHorizonalStatus(rightblocks[i].x + size, rightblocks[i].y)) {
+                    continue;
+                }
+                return false;
+            }
+        } else {
+            for (let i = 0; i < rightblocks.length; ++i) {
+                if (AllB.getHorizonalStatus(rightblocks[i].x, rightblocks[i].y)) {
+                    continue;
+                }
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function leftCheck(leftblocks, isM) {
+        if (isM) {
+            for (let i = 0; i < leftblocks.length; ++i) {
+                if (AllB.getHorizonalStatus(leftblocks[i].x - size, leftblocks[i].y)) {
+                    continue;
+                }
+                return false;
+            }
+        } else {
+            for (let i = 0; i < leftblocks.length; ++i) {
+                if (AllB.getHorizonalStatus(leftblocks[i].x, leftblocks[i].y)) {
+                    continue;
+                }
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function verticalCheck(bottomblocks) {
+            for (let i = 0; i < bottomblocks.length; ++i) {
+                if(AllB.getStatus(bottomblocks[i].x,bottomblocks[i].y)){
+                    continue;
+                }
+                return false;
+            }
+        return true;
+    }
+
+
+
+
+
+
+
+    window.onload = function () {
+        lbscore = document.getElementById("lb_score");
+        canvas = document.getElementById("canvas");
+        ctx = canvas.getContext("2d");
+        if (confirm("play with mobile ?")) {
+            canvas.width = Math.floor(window.document.body.offsetWidth / size) * size - 20;
+            canvas.height = Math.floor(window.document.body.offsetHeight / size) * size - 200;
+        } else {
+            size = 5;
+            canvas.width = 100;//Math.floor(window.document.body.offsetWidth / size) * size - 20;
+            canvas.height = 150;//Math.floor(window.document.body.offsetHeight / size) * size;
+            var bt1 = document.getElementById("leftBt").style.display = "none";
+            var bt2 = document.getElementById("rightBt").style.display = "none";
+            var bt3 = document.getElementById("downBt").style.display = "none";
+            var bt4 = document.getElementById("transformBt").style.display = "none";
+        }
+
+        canWidth = canvas.width;
+        canHeight = canvas.height;
+        xCount = Math.floor(canWidth / size);
+        yCount = Math.floor(canHeight / size);
+
+        leftright = Math.floor(xCount / 2) * size;
+
+        moveType = GetTypeRan();
+
+        AllB = new allBlocks();
+        AllB.init();
+
+
+
+
+
+        window.addEventListener("keydown", onkeydown)
+
+        timer = setInterval(onDraw, 400);
+        window.requestAnimationFrame(anime);
+    }
+
+    function onDraw() {
+        
+        updown += size;
+        moveType.update();
+
+        if (verticalCheck(moveType.bottomblocks))
+        {
+            isdown = false;
+            updown -= size;
+            moveType.update();
+
+            moveType.clear();
+
+            updown += size;
+            moveType.update();
+
+            drawblocks(moveType.blocks,moveType.color);//moveType.draw();
+        }
+        else
+        {
+            updown -= size;
+            moveType.update();
+            AllB.addLine(moveType.blocks,moveType.color);
+            AllB.checkClear(moveType.rightblocks);
+            updown = 0;
+            moveType = null;
+            moveType = GetTypeRan();
+            moveType.color = "darkblue";//'#' + Math.floor(Math.random() * 0xffffff).toString(16);
+            moveType.update();
+            if (leftright < 0) {
+                leftright = 0;
+            } else {
+                var bw = getBlockWith(moveType.blocks);
+                if (leftright + bw > canWidth)
+                    leftright = canWidth - bw;
+            }
+        }
+
+
+
+        AllB.draw();
+
+        //window.requestAnimationFrame(onDraw);
+    }
+    var ll = 0;
+    var isdown = false;
+    function anime() {
+        //if (ll != 0) {
+        //    ctx.beginPath();
+        //    ctx.arc(ll, ll, 21, 0, Math.PI * 2, true);
+        //    ctx.closePath();
+        //    ctx.fillStyle = "grey";
+        //    ctx.fill();
+        //}
+        //ll++;
+        //ctx.beginPath();
+        //ctx.arc(ll, ll, 20, 0, Math.PI * 2, true);
+        //ctx.closePath();
+        //ctx.fillStyle = "green";
+        //ctx.fill();
+        //canvas.height *= 0.99;
+        
+        //if (canvas.height > 150) {
+            //canvas.height -= 0.25;
+        //} else if (canvas.height < 200) {
+           // canvas.height += 0.25;
+        //}
+        if (isdown) {
+            if (ll < 1) {
+                ll++;
+                canvas.style.marginTop = ll;
+            } else {
+                ll--;
+                canvas.style.marginTop = ll;
+            }
+        }
+        window.requestAnimationFrame(anime);
+    }
+
+
+
+
+    // Get Type Random
+    function GetTypeRan() {
+
+        var idx = Math.floor(Math.random() * 7);//[Math.floor(Math.random() * 7), Math.floor(Math.random() * 7)][Math.floor(Math.random() * 2)];
+        var t;
+        switch (idx) {
+            case 0:
+                t = new Ltype();
+                break;
+            case 1:
+                t = new Ztype();
+                break;
+            case 2:
+                t = new Ttype();
+                break;
+            case 3:
+                t = new RectType();
+                break;
+            case 4:
+                t = new Ltype();
+                t.type = 1;
+                break;
+            case 5:
+                t = new Ztype();
+                t.type = 1;
+                break;
+            case 6:
+                t = new Itype();
+                break;
+        }
+        t.swtype = Math.floor(Math.random() * (t.maxtype + 1));
+        return t;
+    }
+
+
+
+    function swtblock(block) {
+        if (block.swtype === block.maxtype) {
+            block.swtype = 0;
+        } else {
+            block.swtype += 1;//Math.floor(Math.random()*3);
+        }
+        block.updateBlocks = true;
+    }
+
+    function drawblocks(blocks) {
+        for (let i = 0; i < blocks.length; i++) {
+            var block = blocks[i]
+            //ctx.fillStyle = moveType.color;
+            ctx.fillRect(block.x, block.y, size, size);
+        }
+    }
+
+    function clearblocks(blocks) {
+        for (let i = 0; i < blocks.length; i++) {
+            var block = blocks[i]
+            ctx.clearRect(block.x, block.y, size, size);
+        }
+    }
+
+    //function getFitTop() {
+
+    //}
+
+    function onkeydown(e) {
+
+        switch (e.keyCode) {
+            case 87: //up
+            case 38:
+                transform();
+                break;
+            case 83: //down
+            case 40:
+                moveFast();
+                break;
+
+            case 65: //left
+            case 37:
+                moveLeft();
+                break;
+            case 68: //right
+            case 39:
+                moveRight();
+                break;
+        }
+    }
+
+    function transform() {
+        var ty = moveType.swtype;
+        moveType.clear();
+        swtblock(moveType);
+        moveType.update();
+                
+
+        if (!verticalCheck(moveType.bottomblocks)) {
+            moveType.swtype = ty
+            moveType.update();
+            return;
+        }
+
+        if (!leftCheck(moveType.leftblocks, true)) {
+            leftright = lrOffset;
+            moveType.update();
+        }else if (!rightCheck(moveType.rightblocks,true)) {
+            leftright = lrOffset;
+            moveType.update();
+        }
+
+        drawblocks(moveType.blocks);//moveType.draw();
+    }
+
+    function moveLeft() {
+        if (leftCheck(moveType.leftblocks, true)) {
+            moveType.clear();
+            leftright -= size;
+            moveType.update();
+            drawblocks(moveType.blocks);//moveType.draw();
+        }
+    }
+
+    function moveRight() {
+        if (rightCheck(moveType.rightblocks, true)) {
+            moveType.clear();
+            leftright += size;
+            moveType.update();
+            drawblocks(moveType.blocks);//moveType.draw();
+        }
+    }
+
+    function moveFast() {
+        updown += size;
+        moveType.update();
+
+        if (verticalCheck(moveType.bottomblocks)) {
+            updown -= size;
+            moveType.update();
+
+            moveType.clear();
+
+            updown += size;
+            moveType.update();
+
+            drawblocks(moveType.blocks);//moveType.draw();
+        } else {
+            updown -= size;
+            moveType.update();
+        }
+    }
+</script>
+</head>
+<body>
+    <div>
+	<canvas id="canvas" style="background:grey;"></canvas>
+    <label id="lb_score">0</label>
+    </div>
+    <div>
+        <button id="leftBt" style="border-radius:50px; width:200px; height:100px" onclick="moveLeft()">Å©</button>
+        <button id="rightBt" style="border-radius:50px; width:200px; height:100px" onclick="moveRight()">Å®</button>
+
+        <button id="downBt" style="border-radius:50px; width:150px; height:100px; float:right" onclick="moveFast()">Å´</button>
+        <button id="transformBt" style="border-radius:50px; width:150px; height:100px; float:right" onclick="transform()">ÅÃ</button>
+    </div>
+</body>
